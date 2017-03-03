@@ -97,8 +97,10 @@ class PDO_Mysql_Statement
         $this->_pql = $sql;
     }
 
-    //2014-9-27添加$params
-    public function execute($params = array())
+    /**
+     * @param array $params
+     */
+    public function execute($params = [])
     {
         if (!empty($params)) {
             foreach ($params as $_k => $_v) {
@@ -115,11 +117,18 @@ class PDO_Mysql_Statement
         $this->_statement->execute();
     }
 
+    /**
+     * @return int
+     */
     public function rowCount()
     {
         return $this->_statement->affected_rows;
     }
 
+    /**
+     * @param $mode
+     * @return bool
+     */
     public function setFetchMode($mode)
     {
         $mode = $this->transformFetchMode($mode);
@@ -130,10 +139,11 @@ class PDO_Mysql_Statement
         return true;
     }
 
-
+    /**
+     * @return bool
+     */
     public function closeCursor()
     {
-        //$this->_result = NULL;
         $this->prepareParams = array();
         $this->readyTypes = array();
         $this->readyValues = array();
@@ -144,11 +154,12 @@ class PDO_Mysql_Statement
             $this->_result->free();
         }
         $this->_result = NULL;
-
-        //$this->_connection->close();
         return $this->_statement->reset();
     }
 
+    /**
+     * @return int
+     */
     public function columnCount()
     {
         return $this->_statement->field_count;
