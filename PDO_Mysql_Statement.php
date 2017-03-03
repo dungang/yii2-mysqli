@@ -6,7 +6,7 @@
  * Time: 9:29
  */
 
-namespace dungang\mysqli\src;
+namespace dungang\mysqli;
 
 use PDO;
 use PDOException;

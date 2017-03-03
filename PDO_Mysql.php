@@ -6,7 +6,7 @@
  * Time: 9:11
  */
 
-namespace dungang\mysqli\src;
+namespace dungang\mysqli;
 
 use PDO;
 use PDOException;
@@ -35,12 +35,16 @@ class PDO_Mysql
     public function __construct($connectionString, $username, $password, $options = array())
     {
         //简单解析
-        preg_match('/host=([\w\.]+);dbname=(\w+)/i', $connectionString, $matches);
-        if (count($matches) < 3) {
-            throw new PDOException('connectionString is invalid');
+        if (preg_match('/mysql:(.*)/i', $connectionString, $matches)) {
+            $query = str_replace(';','&',$matches[1]);
+            $map['port']=3306;
+            parse_str($query,$map);
+            if (isset($map['host']) && isset($map['dbname'])) {
+                $this->handle = new mysqli($map['host'], $username, $password, $map['dbname'],$map['port']);
+                return;
+            }
         }
-        $this->handle = new mysqli($matches[1], $username, $password, $matches[2]);
-        //$options
+        throw new PDOException('connectionString is invalid');
     }
 
     public function beginTransaction()
