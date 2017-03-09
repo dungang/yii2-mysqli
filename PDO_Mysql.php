@@ -154,7 +154,7 @@ class PDO_Mysql
     }
 
     /**
-     * @param $statement
+     * @param $statement string
      * @return PDO_Mysql_Statement
      */
     public function prepare($statement)

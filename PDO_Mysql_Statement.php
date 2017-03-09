@@ -35,9 +35,10 @@ class PDO_Mysql_Statement
     private $_pql = 'unknown';
 
     private $_typeMap = array(
-        'i' => PDO::PARAM_INT,
-        's' => PDO::PARAM_STR,
-        'd' => PDO::PARAM_INT
+        PDO::PARAM_INT => 'i',
+        PDO::PARAM_STR => 's',
+        PDO::PARAM_INT => 'd',
+        PDO::PARAM_NULL => 's'
     );
 
 
@@ -54,7 +55,7 @@ class PDO_Mysql_Statement
     /**
      * PDO_Mysql_Statement constructor.
      * @param $_statement \mysqli_stmt
-     * @param $connection
+     * @param $connection PDO_Mysql
      */
     public function __construct($_statement, $connection)
     {
@@ -73,9 +74,9 @@ class PDO_Mysql_Statement
         return isset($map[$type]) ? $map[$type] : PDO::PARAM_STR;
     }
 
-    public function bindParam($parameter, $value, $type)
+    public function bindParam($parameter, $value, $type = PDO::PARAM_STR)
     {
-        $type = array_search($type, $this->_typeMap);
+        $type = isset($this->_typeMap[$type]) ? $this->_typeMap[$type] : false;
         $key = array_search($parameter, $this->prepareParams);
         if ($key !== false and $type !== false) {
             $this->readyTypes[$key] = $type;
@@ -87,7 +88,7 @@ class PDO_Mysql_Statement
     }
 
     //这里bindValue已经失去了本应该有的特性
-    public function bindValue($parameter, $value, $type)
+    public function bindValue($parameter, $value, $type = PDO::PARAM_STR)
     {
         return $this->bindParam($parameter, $value, $type);
     }
@@ -109,12 +110,17 @@ class PDO_Mysql_Statement
         }
         if (!empty($this->readyTypes)) {
             $params = $this->readyValues;
-            ksort($params);
+            //ksort($params);
             array_unshift($params, implode($this->readyTypes));
             $statement = $this->_statement;
             call_user_func_array(array($statement, 'bind_param'), $this->refValues($params));
+
         }
         $this->_statement->execute();
+
+        if ($this->_statement->errno) {
+            throw new PDOException($this->_statement->error);
+        }
     }
 
     /**
