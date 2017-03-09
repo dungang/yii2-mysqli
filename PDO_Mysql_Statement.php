@@ -50,7 +50,7 @@ class PDO_Mysql_Statement
 
 
 
-    private $_mode = MYSQL_BOTH;
+    private $_mode = MYSQLI_BOTH;
 
     /**
      * PDO_Mysql_Statement constructor.
@@ -119,7 +119,7 @@ class PDO_Mysql_Statement
         $this->_statement->execute();
 
         if ($this->_statement->errno) {
-            throw new PDOException($this->_statement->error);
+            throw new PDOException($this->_statement->error,$this->_statement->errno);
         }
     }
 
@@ -154,7 +154,7 @@ class PDO_Mysql_Statement
         $this->readyTypes = array();
         $this->readyValues = array();
         $this->_pql = 'unknown';
-        $this->_mode = MYSQL_BOTH;
+        $this->_mode = MYSQLI_BOTH;
 
         if (!empty($this->_result)) {
             $this->_result->free();

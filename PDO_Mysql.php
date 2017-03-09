@@ -41,6 +41,9 @@ class PDO_Mysql
             parse_str($query,$map);
             if (isset($map['host']) && isset($map['dbname'])) {
                 $this->handle = new mysqli($map['host'], $username, $password, $map['dbname'],$map['port']);
+                if ($this->handle->connect_errno) {
+                    throw new PDOException($this->handle->connect_error,$this->handle->connect_errno);
+                }
                 return;
             }
         }
@@ -139,12 +142,14 @@ class PDO_Mysql
 
     public function exec($statement)
     {
-        $result = $this->handle->query($statement);
-        if (is_object($result)) {
-            mysqli_free_result($result);
-            return 0;
+        if ($result = $this->handle->query($statement)){
+            if (is_object($result)) {
+                mysqli_free_result($result);
+                return 0;
+            }
+            return $this->handle->affected_rows;
         }
-        return $this->handle->affected_rows;
+        throw new PDOException($this->handle->error,$this->handle->errno);
     }
 
 
