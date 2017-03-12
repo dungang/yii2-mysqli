@@ -100,6 +100,7 @@ class PDO_Mysql_Statement
 
     /**
      * @param array $params
+     * @return $this
      */
     public function execute($params = [])
     {
@@ -121,6 +122,8 @@ class PDO_Mysql_Statement
         if ($this->_statement->errno) {
             throw new PDOException($this->_statement->error,$this->_statement->errno);
         }
+
+        return $this;
     }
 
     /**
@@ -191,7 +194,13 @@ class PDO_Mysql_Statement
         $this->prepareParams = $params;
     }
 
-    public function fetch($mode = NULL)
+    /**
+     * @param null $mode
+     * @param null $orientation
+     * @param null $offset
+     * @return bool|mixed
+     */
+    public function fetch($mode = NULL,$orientation = NULL, $offset = NULL)
     {
         if ($this->_result == NULL) {
             $this->_result = $this->_statement->get_result();

@@ -12,7 +12,7 @@ use PDO;
 use PDOException;
 use mysqli;
 
-class PDO_Mysql
+class PDO_Mysql extends PDO
 {
     const MYSQL_ATTR_USE_BUFFERED_QUERY = 1000;
 
@@ -28,9 +28,14 @@ class PDO_Mysql
 
     const MYSQL_ATTR_DIRECT_QUERY = 1006;
 
+    /**
+     * @var mysqli|null
+     */
     private $handle = NULL;
 
     private $tmpParams = array();
+
+    private $inTransaction;
 
     public function __construct($connectionString, $username, $password, $options = array())
     {
@@ -50,18 +55,25 @@ class PDO_Mysql
         throw new PDOException('connectionString is invalid');
     }
 
+    public function inTransaction () {
+        return $this->inTransaction;
+    }
+
     public function beginTransaction()
     {
+        $this->inTransaction = true;
         return $this->handle->autocommit(FALSE);
     }
 
     public function commit()
     {
+        $this->inTransaction = false;
         return $this->handle->commit();
     }
 
     public function rollBack()
     {
+        $this->inTransaction = false;
         return $this->handle->rollback();
     }
 
@@ -78,17 +90,17 @@ class PDO_Mysql
     public function setAttribute($attribute, $value, &$source = null)
     {
         switch ($attribute) {
-            case PDO::ATTR_AUTOCOMMIT:
+            case self::ATTR_AUTOCOMMIT:
                 $value = $value ? 1 : 0;
                 if (!$this->handle->autocommit($value)) {
-                    throw  new PDOException('set autocommit faild');
+                    throw  new PDOException('set autocommit failed');
                 }
 
                 return true;
-            case PDO::ATTR_TIMEOUT:
+            case self::ATTR_TIMEOUT:
                 $value = intval($value);
                 if ($value > 1 && $this->handle->options(MYSQLI_OPT_CONNECT_TIMEOUT, $value)) {
-                    $source[PDO::ATTR_TIMEOUT] = $value;
+                    $source[self::ATTR_TIMEOUT] = $value;
                     return true;
                 }
                 break;
@@ -130,14 +142,46 @@ class PDO_Mysql
 
     /**
      * @param $attribute
+     * PDO::ATTR_AUTOCOMMIT
+     * PDO::ATTR_CASE
+     * PDO::ATTR_CLIENT_VERSION
+     * PDO::ATTR_CONNECTION_STATUS
+     * PDO::ATTR_DRIVER_NAME
+     * PDO::ATTR_ERRMODE
+     * PDO::ATTR_ORACLE_NULLS
+     * PDO::ATTR_PERSISTENT
+     * PDO::ATTR_PREFETCH
+     * PDO::ATTR_SERVER_INFO
+     * PDO::ATTR_SERVER_VERSION
+     * PDO::ATTR_TIMEOUT
      * @return mixed
      */
     public function getAttribute($attribute)
     {
-        if (PDO::ATTR_DRIVER_NAME == $attribute) {
-            return 'mysql';
+        switch ($attribute) {
+            case self::ATTR_DRIVER_NAME:
+                return 'mysql';
+            case self::ATTR_AUTOCOMMIT:
+                return $this->isAutoCommit();
+            case self::ATTR_SERVER_INFO;
+                return $this->handle->get_server_info();
+            case self::ATTR_SERVER_VERSION:
+                return $this->handle->get_server_info();
+            case self::ATTR_CLIENT_VERSION:
+                return $this->handle->get_client_info();
+            default:
+                return '';
         }
-        return '';
+    }
+
+    private function isAutoCommit()
+    {
+        if ($result = $this->handle->query("SELECT @@autocommit")) {
+            $row = $result->fetch_row();
+            $result->free();
+            return $row[0];
+        }
+        throw new PDOException('can not detect autocommit');
     }
 
     public function exec($statement)
@@ -159,10 +203,11 @@ class PDO_Mysql
     }
 
     /**
-     * @param $statement string
+     * @param string $statement
+     * @param null $options
      * @return PDO_Mysql_Statement
      */
-    public function prepare($statement)
+    public function prepare($statement,$options=NULL)
     {
         $this->tmpParams = array();
         $newStatement = preg_replace_callback('/(:\w+)/i', function ($matches) {
@@ -179,7 +224,7 @@ class PDO_Mysql
         return $oStatement;
     }
 
-    public function lastInsertId()
+    public function lastInsertId($seqname = NULL)
     {
         return $this->handle->insert_id;
     }
@@ -187,11 +232,11 @@ class PDO_Mysql
     public function quote($param, $parameter_type = -1)
     {
         switch ($parameter_type) {
-            case PDO::PARAM_BOOL:
+            case self::PARAM_BOOL:
                 return $param ? 1 : 0;
-            case PDO::PARAM_NULL:
+            case self::PARAM_NULL:
                 return 'NULL';
-            case PDO::PARAM_INT:
+            case self::PARAM_INT:
                 return is_null($param) ? 'NULL' : (is_int($param) ? $param : (float)$param);
             default:
                 return '\'' . $this->handle->real_escape_string($param) . '\'';
