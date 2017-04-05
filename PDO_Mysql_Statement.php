@@ -29,6 +29,7 @@ class PDO_Mysql_Statement
      */
     private $_result = NULL;
 
+
     /**
      * @var string
      */
@@ -100,7 +101,7 @@ class PDO_Mysql_Statement
 
     /**
      * @param array $params
-     * @return $this
+     * @return bool
      */
     public function execute($params = [])
     {
@@ -115,15 +116,8 @@ class PDO_Mysql_Statement
             array_unshift($params, implode($this->readyTypes));
             $statement = $this->_statement;
             call_user_func_array(array($statement, 'bind_param'), $this->refValues($params));
-
         }
-        $this->_statement->execute();
-
-        if ($this->_statement->errno) {
-            throw new PDOException($this->_statement->error,$this->_statement->errno);
-        }
-
-        return $this;
+        return $this->_statement->execute();
     }
 
     /**
@@ -199,21 +193,12 @@ class PDO_Mysql_Statement
      * @param null $orientation
      * @param null $offset
      * @return bool|mixed
+     * @throws \Exception
      */
     public function fetch($mode = NULL,$orientation = NULL, $offset = NULL)
     {
-        if ($this->_result == NULL) {
-            $this->_result = $this->_statement->get_result();
-        }
-        if (empty($this->_result)) {
-            throw new PDOException($this->_statement->error);
-        }
-
-        $_mode = $this->_mode;
-        if (!empty($mode) and ($mode = $this->transformFetchMode($mode)) != false) {
-            $_mode = $mode;
-        }
-        $result = $this->_result->fetch_array($_mode);
+        $mode = $this->switchMode($mode);
+        $result = $this->_result->fetch_array($mode);
         return $result === NULL ? false : $result;
     }
 
@@ -223,20 +208,31 @@ class PDO_Mysql_Statement
         return $column[$column_number];
     }
 
-    public function fetchAll($mode = NULL)
+    private function switchMode($mode)
     {
         if ($this->_result == NULL) {
             $this->_result = $this->_statement->get_result();
         }
         if (empty($this->_result)) {
-            throw new PDOException($this->_statement->error);
+            throw new \PDOException('SQLSTATE['.$this->_statement->sqlstate.']: ' . $this->_statement->error,$this->_statement->errno);
         }
         $_mode = $this->_mode;
         if (!empty($mode) and ($mode = $this->transformFetchMode($mode)) != false) {
             $_mode = $mode;
         }
-        $result = $this->_result->fetch_all($_mode);
-        return $result === NULL ? false : $result;
+        return $_mode;
+    }
+
+    /**
+     * @param null $mode
+     * @return array|mixed
+     * @throws \Exception
+     */
+    public function fetchAll($mode = NULL)
+    {
+        $mode = $this->switchMode($mode);
+        $result = $this->_result->fetch_all($mode);
+        return $result === NULL ? [] : $result;
     }
 
     public function fetchObject()

@@ -47,12 +47,12 @@ class PDO_Mysql extends PDO
             if (isset($map['host']) && isset($map['dbname'])) {
                 $this->handle = new mysqli($map['host'], $username, $password, $map['dbname'],$map['port']);
                 if ($this->handle->connect_errno) {
-                    throw new PDOException($this->handle->connect_error,$this->handle->connect_errno);
+                    throw new PDOException('SQLSTATE['.$this->handle->sqlstate.']: ' . $this->handle->connect_error,$this->handle->connect_errno);
                 }
                 return;
             }
         }
-        throw new PDOException('connectionString is invalid');
+        throw new \Exception('connectionString is invalid');
     }
 
     public function inTransaction () {
@@ -93,7 +93,7 @@ class PDO_Mysql extends PDO
             case self::ATTR_AUTOCOMMIT:
                 $value = $value ? 1 : 0;
                 if (!$this->handle->autocommit($value)) {
-                    throw  new PDOException('set autocommit failed');
+                    throw  new PDOException('SQLSTATE['.$this->handle->sqlstate.']: ' . 'set autocommit failed');
                 }
 
                 return true;
@@ -181,7 +181,7 @@ class PDO_Mysql extends PDO
             $result->free();
             return $row[0];
         }
-        throw new PDOException('can not detect autocommit');
+        throw new \PDOException('can not detect autocommit');
     }
 
     public function exec($statement)
@@ -193,7 +193,7 @@ class PDO_Mysql extends PDO
             }
             return $this->handle->affected_rows;
         }
-        throw new PDOException($this->handle->error,$this->handle->errno);
+        throw new PDOException('SQLSTATE['.$this->handle->sqlstate.']: ' . $this->handle->error,$this->handle->errno);
     }
 
 
@@ -216,7 +216,7 @@ class PDO_Mysql extends PDO
         }, $statement);
         $s = $this->handle->prepare($newStatement);
         if ($s == false) {
-            throw new PDOException($this->handle->error);
+            throw new PDOException('SQLSTATE['.$this->handle->sqlstate.']: ' . $this->handle->error,$this->handle->errno);
         }
         $oStatement = new PDO_Mysql_Statement($s, $this);
         $oStatement->setPrepareParams($this->tmpParams);
