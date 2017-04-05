@@ -33,7 +33,7 @@ class PDO_Mysql_Statement
     /**
      * @var string
      */
-    private $_pql = 'unknown';
+    private $_sql = 'unknown';
 
     private $_typeMap = array(
         PDO::PARAM_INT => 'i',
@@ -96,7 +96,7 @@ class PDO_Mysql_Statement
 
     public function setStateSql($sql)
     {
-        $this->_pql = $sql;
+        $this->_sql = $sql;
     }
 
     /**
@@ -150,7 +150,7 @@ class PDO_Mysql_Statement
         $this->prepareParams = array();
         $this->readyTypes = array();
         $this->readyValues = array();
-        $this->_pql = 'unknown';
+        $this->_sql = 'unknown';
         $this->_mode = MYSQLI_BOTH;
 
         if (!empty($this->_result)) {
@@ -170,7 +170,7 @@ class PDO_Mysql_Statement
 
     public function debugDumpParams()
     {
-        echo $this->_pql;
+        echo $this->_sql;
     }
 
     public function errorCode()
@@ -231,8 +231,15 @@ class PDO_Mysql_Statement
     public function fetchAll($mode = NULL)
     {
         $mode = $this->switchMode($mode);
-        $result = $this->_result->fetch_all($mode);
-        return $result === NULL ? [] : $result;
+        if ($mode == PDO::FETCH_COLUMN) {
+            $result = $this->_result->fetch_all(MYSQLI_NUM);
+            $result = array_map(function ($val) {
+                return $val[0];
+            }, $result);
+        } else {
+            $result = $this->_result->fetch_all($mode);
+        }
+        return $result === NULL? []:$result;
     }
 
     public function fetchObject()
@@ -250,7 +257,7 @@ class PDO_Mysql_Statement
             case PDO::FETCH_NUM   :
                 return MYSQLI_NUM;
             default :
-                return false;
+                return $mode;
         }
     }
 
