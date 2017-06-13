@@ -205,6 +205,9 @@ class PDO_Mysql_Statement
     public function fetchColumn($column_number = 0)
     {
         $column = $this->fetch(PDO::FETCH_NUM);
+        if ($column === false or !is_array($column) or !array_key_exists($column_number, $column)) {
+            return false;
+        }
         return $column[$column_number];
     }
 
