@@ -2,7 +2,6 @@
   "name": "dungang/yii2-mysqli",
   "description": "A  PDO_Mysql for Yii2, base on mysqli",
   "license": "MIT",
-  "minimum-stability": "dev",
   "authors": [
     {
       "name": "dun gang",
